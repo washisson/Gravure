@@ -3,7 +3,7 @@
 #include "Interfaces.hpp"
 #include <SFML/Graphics.hpp>
 #include <algorithm>
-#include <iostream>
+// #include <iostream>
 // #include "Filter2d.hpp"
 
 class ColorMap: public ColorMapInterface{
@@ -46,6 +46,13 @@ public:
 		arr = x.arr;
 		x.arr = nullptr;
 		x.width = 0, x.height = 0;
+	}
+
+	ColorMap(const ColorMap & x): ColorMap(x.width, x.height){
+		std::cout << arr << '\n';
+		for(int i = 0; i < width; ++ i)
+			for(int j = 0; j < height; ++ j)
+				arr[i][j] = x.arr[i][j];
 	}
 
 	~ColorMap(){
@@ -152,33 +159,21 @@ public:
 		return sf::Color::Yellow;
 	}
 
-	ColorMap& separate(){
-		for(int i = 0; i < width; ++ i)
-			for(int j = 0; j < height; ++ j)
-				// arr[i][j] = (arr[i][j] < .45? 0: arr[i][j] < .55? arr[i][j]: 1);
-				arr[i][j] = (arr[i][j] < .4? arr[i][j] / 4: arr[i][j] < .6? (arr[i][j] * 4 - 3,1): arr[i][j]/4 + 0.75);
-				// arr[i][j] *= arr[i][j]*arr[i][j];
-
-		return *this;
-	}
-
-	ColorMap useFilter2d(const Filter2dInterface & filter) const{
-		int radius = filter.getRadius();
-		const float* const* filterKernel = filter.getKernel();
+	template<typename StaticFilterDerived>
+	ColorMap useFilter() const{
 		ColorMap tempColorMap(width, height);
+		// ColorMap tempColorMap(*this);
 
-		for(int i = 0; i < width; ++ i)
-			for(int j = 0; j < height; ++ j){
-				float sum = 0;
-
-				for(int ki = - radius; ki <= radius; ++ ki)
-					for(int kj = -radius; kj <= radius; ++ kj)
-						sum += arr[std::min(width - 1, std::max(i + ki, 0))][std::min(height - 1, std::max(j + kj, 0))] * filterKernel[radius  + ki][radius + kj];
-
-				tempColorMap.arr[i][j] = sum;
+		for(int i = 0; i < width; ++ i){
+			for(int j = 0; j < height; ++j){
+				tempColorMap.arr[i][j] = StaticFilterDerived::convert(arr[i][j]);
+				// cout << tempColorMap.arr[i][j]
 			}
+		}
+
 		return tempColorMap;
 	}
+
 
 	ColorMap useHorizontalFilter1d(const Filter1dInterface & filter) const{
 		int radius = filter.getRadius();
@@ -215,8 +210,66 @@ public:
 			}
 		return tempColorMap;
 	}
+
 	ColorMap useFilter1d(const Filter1dInterface & filter) const{
 		return useHorizontalFilter1d(filter).useVerticalFilter1d(filter);
+	}
+	ColorMap useFilter2d(const Filter2dInterface & filter) const{
+		int radius = filter.getRadius();
+		const float* const* filterKernel = filter.getKernel();
+		ColorMap tempColorMap(width, height);
+
+		for(int i = 0; i < width; ++ i)
+			for(int j = 0; j < height; ++ j){
+				float sum = 0;
+
+				for(int ki = - radius; ki <= radius; ++ ki)
+					for(int kj = -radius; kj <= radius; ++ kj)
+						sum += arr[std::min(width - 1, std::max(i + ki, 0))][std::min(height - 1, std::max(j + kj, 0))] * filterKernel[radius  + ki][radius + kj];
+
+				tempColorMap.arr[i][j] = sum;
+			}
+		return tempColorMap;
+	}
+
+	ColorMap linearConvert(const float a, const float b) const{
+		ColorMap tempColorMap(width, height);
+
+		for(int i = 0; i < width; ++ i)
+			for(int j = 0; j < height; ++ j)
+				tempColorMap.arr[i][j] = a * arr[i][j] + b;
+
+		return tempColorMap;
+	}
+
+	ColorMap merge(const ColorMap & other, const float alpha){
+		int minWidth = std::min(width, other.width),  maxWidth = std::max(width, other.width), minHeight = std::min(height, other.height), maxHeight = std::max(height, other.height);
+		ColorMap tempColorMap(maxWidth, maxHeight);
+
+		for(int i = 0; i < minWidth; ++ i)
+			for(int j = 0; j < minHeight; ++ j)
+				tempColorMap.arr[i][j] = arr[i][j] * (1 - alpha) + other.arr[i][j] * alpha;
+
+
+		for(int i = minWidth; i < maxWidth; ++ i)
+			for(int j = minHeight; j < maxHeight; ++ j)
+				tempColorMap.arr[i][j] = 0;
+
+		for(int i = minWidth; i < width; ++ i)
+			for(int j = 0; j < height; ++ j)
+				tempColorMap.arr[i][j] = arr[i][j];
+		for(int i = minWidth; i < other.width; ++ i)
+			for(int j = 0; j < other.height; ++ j)
+				tempColorMap.arr[i][j] = other.arr[i][j];
+
+		for(int i = 0; i < minWidth; ++ i)
+			for(int j = minHeight; j < height; ++ j)
+				tempColorMap.arr[i][j] = arr[i][j];
+		for(int i = 0; i < minWidth; ++ i)
+			for(int j = minHeight; j < other.height; ++ j)
+				tempColorMap.arr[i][j] = other.arr[i][j];
+
+		return tempColorMap;
 	}
 };
 

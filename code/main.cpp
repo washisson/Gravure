@@ -1,13 +1,14 @@
+#include <iostream>
 #include "Saver.hpp"
-#include "Filter2d.hpp"
+#include "Filter.hpp"
 #include "Filter1d.hpp"
+#include "Filter2d.hpp"
 #include "ColorMap.hpp"
 #include <SFML/Graphics.hpp>
 // #include <random>
 #include <windows.h>
 #include <math.h>
 #include <time.h>
-#include <iostream>
 #include <fstream>
 #include <string>
 // #include <stdint.h>
@@ -32,9 +33,10 @@ int main(){
     SetConsoleOutputCP(1251);
 
 	float blurSigma1 = 2, blurSigma2 = 2, blurSigma3 = 2;
-	int w_width = 512, w_height = 512;
+	int windowWidth = 512, windowHeihgt = 512;
 	bool t_start = true, t_draw = true;
 	std::string nameOfImageFile;
+
 	// std::mt19937_64 rnd(time(0));
 	// std::uniform_real_distribution<> rnd_rl(0, 1);
 
@@ -42,19 +44,14 @@ int main(){
 
 	readNameOfImageFile(nameOfImageFile);
 	WB_image.loadFromFile(nameOfImageFile);
-	// WB_image.loadFromFile("1 - 512.png");
-	// WB_image.loadFromFile("source images/1 - 1024.png");
-	// WB_image.loadFromFile("IMG_20240614_192205.jpg");
-	// WB_image.loadFromFile("3wb.png");
-	// WB_image.loadFromFile("2color.png");
-	w_width = WB_image.getSize().x, w_height = WB_image.getSize().y;
+	windowWidth = WB_image.getSize().x, windowHeihgt = WB_image.getSize().y;
 
-	sf::RenderWindow window(sf::VideoMode(w_width, w_height), "Printmaking");
+	sf::RenderWindow window(sf::VideoMode(windowWidth, windowHeihgt), "Printmaking");
 	Saver saver;
 	sf::Texture background_texture;
-	sf::RectangleShape background(sf::Vector2f(w_width, w_height));
+	sf::RectangleShape background(sf::Vector2f(windowWidth, windowHeihgt));
 
-	background_texture.create(w_width, w_height);
+	background_texture.create(windowWidth, windowHeihgt);
 	background.setTexture(& background_texture);
 
 	background_texture.loadFromImage(WB_image);
@@ -69,6 +66,7 @@ int main(){
 	sf::Image testImage;
 	sf::Image blurImage1, blurImage2, blurImage3;
 	sf::Image frequencyDecompositionImage1, frequencyDecompositionImage2, frequencyDecompositionImage3;
+
 	ColorMap mainColorMap(WB_image);
 	ColorMap testColotMap;
 	ColorMap frequencyDecompositionColorMap1, frequencyDecompositionColorMap2, frequencyDecompositionColorMap3;
@@ -80,26 +78,29 @@ int main(){
 	blurColorMap1 = mainColorMap.useFilter1d(filter1);
 	blurColorMap2 = blurColorMap1.useFilter1d(filter1);
 	blurColorMap3 = blurColorMap2.useFilter1d(filter1);
+
+	frequencyDecompositionColorMap1 = (mainColorMap - blurColorMap1).linearConvert(0.5, 0.5);
+	frequencyDecompositionColorMap2 = (blurColorMap1 - blurColorMap2).linearConvert(0.5, 0.5);
+	frequencyDecompositionColorMap3 = (blurColorMap2 - blurColorMap3).linearConvert(0.5, 0.5);
+
 	blurImage1 = blurColorMap1.getWBImage();
 	blurImage2 = blurColorMap2.getWBImage();
 	blurImage3 = blurColorMap3.getWBImage();
 
-	frequencyDecompositionColorMap1 = (mainColorMap - blurColorMap1) / 2 + 0.5;
-	// frequencyDecompositionColorMap1.separate();
 	frequencyDecompositionImage1 = frequencyDecompositionColorMap1.getWBImage();
-	frequencyDecompositionColorMap2 = (blurColorMap1 - blurColorMap2) / 2 + 0.5;
 	frequencyDecompositionImage2 = frequencyDecompositionColorMap2.getWBImage();
-	frequencyDecompositionColorMap3 = (blurColorMap2 - blurColorMap3) / 2 + 0.5;
 	frequencyDecompositionImage3 = frequencyDecompositionColorMap3.getWBImage();
+	
 	resultImage = WB_image;
 	// resultImage = createEngravingEffect(WB_image);
 
-	testColotMap = frequencyDecompositionColorMap1;
+	// testColotMap = frequencyDecompositionColorMap1;
 	// testColotMap = mainColorMap;
-	testColotMap.separate();
+	// testColotMap.separate();
+		testColotMap = frequencyDecompositionColorMap1.useFilter<SeparateFilter>();
 	testImage = testColotMap.getWBImage();
 
-	for(int j = 0; j < w_height / 2; ++ j){
+	for(int j = 0; j < windowHeihgt / 2; ++ j){
 		sf::Color temp_color(sf::Color::Red);
 
 		resultImage.setPixel(38 + abs(j % 8 - 4), j + 8, temp_color);
@@ -161,6 +162,7 @@ int main(){
 					break;
 				}
 		}
+
 
 		if(tReloadImage && numberOfImage != oldNumberOfImage){
 			tReloadImage = false;

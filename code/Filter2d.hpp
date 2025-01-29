@@ -12,7 +12,7 @@ protected:
 public:
 	Filter2d(): kernel(nullptr), width(0), height(0), radius(0){}
 
-	virtual ~Filter2d(){
+	~Filter2d(){
 		if(kernel!= nullptr){
 			if(kernel[0] != nullptr)
 				delete[] kernel[0];
@@ -31,7 +31,6 @@ public:
 
 class GaussianFilter2d: public Filter2d{
 public:
-	// GaussianFilter2d(): Filter2d(){}
 
 	GaussianFilter2d(float sigma) {
 		float sum = 0;
