@@ -174,6 +174,18 @@ public:
 		return tempColorMap;
 	}
 
+	ColorMap useFilter(const FilterInterface & filter) const{
+		ColorMap tempColorMap(width, height);
+
+		for(int i = 0; i < width; ++ i){
+			for(int j = 0; j < height; ++j){
+				tempColorMap.arr[i][j] = filter.convert(i, j, arr[i][j]);
+			}
+		}
+
+		return tempColorMap;
+	}
+
 
 	ColorMap useHorizontalFilter1d(const Filter1dInterface & filter) const{
 		int radius = filter.getRadius();

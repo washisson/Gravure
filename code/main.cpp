@@ -4,6 +4,7 @@
 #include "Filter1d.hpp"
 #include "Filter2d.hpp"
 #include "ColorMap.hpp"
+#include "Constants.hpp"
 #include <SFML/Graphics.hpp>
 // #include <random>
 #include <windows.h>
@@ -13,7 +14,6 @@
 #include <string>
 // #include <stdint.h>
 
-const double my_pi = 3.14159265358979, blurRadius = 50;
 const char nameOfConfigFile[] = "Engrave.config";
 bool t_save = false, t_autochange = true, t_fast_change = true;
 
@@ -94,10 +94,15 @@ int main(){
 	resultImage = WB_image;
 	// resultImage = createEngravingEffect(WB_image);
 
+	// HorizontalSinLinesPattern, VerticalSinLinesPattern, OffsetPattern, KletkaPattern_sd
+
 	// testColotMap = frequencyDecompositionColorMap1;
 	// testColotMap = mainColorMap;
 	// testColotMap.separate();
-		testColotMap = frequencyDecompositionColorMap1.useFilter<SeparateFilter>();
+		// testColotMap = mainColorMap.useFilter<SeparateFilter>();
+		testColotMap = blurColorMap3.useFilter(HorizontalSinLinesPattern_sd(windowWidth, windowHeihgt, 16));
+		testColotMap = frequencyDecompositionColorMap1.merge(testColotMap, 0.012).useFilter<SeparateFilter>();
+		// testColotMap = mainColorMap.merge(testColotMap, 0.5).useFilter<SeparateFilter>();
 	testImage = testColotMap.getWBImage();
 
 	for(int j = 0; j < windowHeihgt / 2; ++ j){
@@ -107,7 +112,7 @@ int main(){
 
 	}
 	if(t_save){
-		saver.set_image(resultImage);
+		saver.set_image(testImage);
 		saver.save_image();
 	}
 	background_texture.loadFromImage(resultImage);

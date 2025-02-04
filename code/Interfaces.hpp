@@ -2,11 +2,24 @@
 #define _Interfaces
 
 template <typename StaticFilterDerived>
-class StaticFilterInerface{
+class StaticFilterInterface{
 public:
 	static float convert (float x){
 		return StaticFilterDerived::convertImp(x);
 	}
+};
+
+class FilterInterface{
+protected:
+	int width, height;
+public:
+	FilterInterface(int w, int h): width(w), height(h){}
+	virtual ~FilterInterface(){}
+
+	virtual float convert(const int i, const int j, const float val) const{
+		return 0.8;
+	}
+
 };
 
 class Filter1dInterface{
